@@ -1,0 +1,106 @@
+# fiverr-interview
+
+FastAPI skeleton with Postgres, Redis, Docker, uv, lint/tests.
+
+## Prerequisites
+
+- **Docker** and **Docker Compose** (for running all services)
+- For local dev: **Python 3.12+**, **[uv](https://docs.astral.sh/uv/getting-started/installation)**, **Git**
+
+## Overall Design
+
+This is a production-style FastAPI skeleton with:
+- **API**: FastAPI with async endpoints
+- **Database**: PostgreSQL 16 (async SQLAlchemy + asyncpg)
+- **Cache**: Redis 7
+- **Package manager**: uv (fast, lockfile-based)
+- **Code quality**: black, isort, pylint, pyright, pre-commit
+- **Testing**: pytest with async support
+- **CI**: GitHub Actions running all checks
+
+**Directory layout**:
+```
+app/             # FastAPI application
+  main.py        # App entry, lifespan
+  config.py      # Pydantic settings (env vars)
+  api/v1/        # API routes (health checks)
+  db/            # Database session, base
+  redis_client.py # Redis connection
+  models/        # SQLAlchemy models (empty - add yours)
+  schemas/       # Pydantic schemas (empty - add yours)
+tests/           # pytest tests
+docker-compose.yml  # All services (app, postgres, redis)
+```
+
+**Config**: Loaded from `.env` file and environment variables via `pydantic-settings`. Docker uses hostnames `postgres` and `redis`.
+
+## How to Run
+
+### Option A: Docker (recommended)
+
+```bash
+docker compose up --build
+```
+
+- API: http://localhost:8000
+- Docs: http://localhost:8000/docs
+- Test with Postman or cURL
+
+### Option B: Local Development
+
+1. Install uv (if not already): see [uv installation](https://docs.astral.sh/uv/getting-started/installation)
+2. Install dependencies:
+   ```bash
+   uv sync
+   ```
+3. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+4. Start Postgres and Redis:
+   ```bash
+   docker compose up -d postgres redis
+   ```
+5. Run the app:
+   ```bash
+   uv run uvicorn app.main:app --reload
+   ```
+6. In VS Code: select `.venv/Scripts/python.exe` (Windows) or `.venv/bin/python` (Mac/Linux) as interpreter
+
+## Tests
+
+```bash
+uv run pytest tests/ -v
+```
+
+## Lint / Type-check
+
+```bash
+uv run black --check .
+uv run isort --check .
+uv run pylint app/
+uv run pyright
+```
+
+## Pre-commit
+
+Install hooks:
+```bash
+uv run pre-commit install
+```
+
+Run all hooks:
+```bash
+uv run pre-commit run --all-files
+```
+
+## CI
+
+On every push/PR, GitHub Actions runs the same checks: black, isort, pylint, pyright, and pytest.
+
+See [.github/workflows/ci.yml](.github/workflows/ci.yml).
+
+## Links
+
+- **Extending the app**: See [CLAUDE.md](CLAUDE.md) for stack, patterns, and where to add code.
+- **Claude Code setup**: See [docs/CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for configuring the Claude Code extension in VS Code with AWS Bedrock API key.
