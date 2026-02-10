@@ -1,32 +1,16 @@
-"""Async SQLAlchemy engine and session."""
+"""Async SQLAlchemy session; engine and factory are on app.state (no globals)."""
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-from app.config import get_settings
-
-_settings = get_settings()
-
-engine = create_async_engine(
-    _settings.database_url,
-    echo=_settings.DEBUG,
-    pool_pre_ping=True,
-)
-
-AsyncSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
+from fastapi import Request
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
     """Yield an async DB session for FastAPI dependency injection."""
-    async with AsyncSessionLocal() as session:
+    session_factory: async_sessionmaker[AsyncSession] = request.app.state.async_session
+    async with session_factory() as session:
         try:
             yield session
         except Exception:
@@ -37,9 +21,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 @asynccontextmanager
-async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
-    """Context manager for async DB session (e.g. lifespan)."""
-    async with AsyncSessionLocal() as session:
+async def get_db_context(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> AsyncGenerator[AsyncSession, None]:
+    """Context manager for async DB session when you have the factory (e.g. tests)."""
+    async with session_factory() as session:
         try:
             yield session
             await session.commit()

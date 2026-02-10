@@ -37,12 +37,6 @@ class Settings(BaseSettings):
         )
 
 
-_settings_instance: Settings | None = None
-
-
 def get_settings() -> Settings:
-    """Return cached settings instance."""
-    global _settings_instance
-    if _settings_instance is None:
-        _settings_instance = Settings()
-    return _settings_instance
+    """Return settings loaded from environment (no cache, no globals)."""
+    return Settings()

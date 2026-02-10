@@ -4,23 +4,34 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.api.v1.router import get_router
 from app.config import get_settings
 from app.db.base import Base
-from app.db.session import engine
-from app.redis_client import close_redis
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    """Startup: ensure config and connections. Shutdown: dispose engine, close Redis."""
-    get_settings()
+async def lifespan(fastapi_app: FastAPI) -> AsyncIterator[None]:
+    """Startup: engine and session factory on app.state. Shutdown: dispose engine."""
+    settings = get_settings()
+    engine = create_async_engine(
+        settings.database_url,
+        echo=settings.DEBUG,
+        pool_pre_ping=True,
+    )
+    fastapi_app.state.engine = engine
+    fastapi_app.state.async_session = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
-    await close_redis()
 
 
 app = FastAPI(
