@@ -44,7 +44,30 @@ docker compose up --build
 
 - API: http://localhost:8000
 - Docs: http://localhost:8000/docs
-- Test with Postman or cURL
+
+### Test that the server runs (cURL)
+
+Basic liveness:
+```bash
+curl -s http://localhost:8000/api/v1/health
+```
+
+Check Postgres connectivity:
+```bash
+curl -s http://localhost:8000/api/v1/health/db
+```
+
+Check Redis connectivity:
+```bash
+curl -s http://localhost:8000/api/v1/health/redis
+```
+
+All health checks (verbose):
+```bash
+curl -s -w "\n%{http_code}\n" http://localhost:8000/api/v1/health
+curl -s -w "\n%{http_code}\n" http://localhost:8000/api/v1/health/db
+curl -s -w "\n%{http_code}\n" http://localhost:8000/api/v1/health/redis
+```
 
 ### Option B: Local Development
 
@@ -69,17 +92,35 @@ docker compose up --build
 
 ## Tests
 
+Run all tests:
 ```bash
 uv run pytest tests/ -v
 ```
 
+Run with coverage:
+```bash
+uv run pytest tests/ -v --cov=app --cov-report=html
+```
+
+Run specific test file:
+```bash
+uv run pytest tests/api/test_health.py -v
+```
+
 ## Lint / Type-check
 
+Check only (no changes):
 ```bash
 uv run black --check .
 uv run isort --check .
 uv run pylint app/
 uv run pyright
+```
+
+Auto-fix formatting:
+```bash
+uv run black .
+uv run isort .
 ```
 
 ## Pre-commit
@@ -92,6 +133,47 @@ uv run pre-commit install
 Run all hooks:
 ```bash
 uv run pre-commit run --all-files
+```
+
+## Docker Commands
+
+View logs (all services):
+```bash
+docker compose logs -f
+```
+
+View logs (specific service):
+```bash
+docker compose logs -f app
+docker compose logs -f postgres
+docker compose logs -f redis
+```
+
+Stop all services:
+```bash
+docker compose down
+```
+
+Stop and remove volumes (clean slate):
+```bash
+docker compose down -v
+```
+
+Rebuild and restart:
+```bash
+docker compose up --build --force-recreate
+```
+
+## Database & Redis Access
+
+Access PostgreSQL:
+```bash
+docker compose exec postgres psql -U user -d dbname
+```
+
+Access Redis CLI:
+```bash
+docker compose exec redis redis-cli
 ```
 
 ## CI
