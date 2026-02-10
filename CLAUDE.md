@@ -14,8 +14,8 @@ This file documents the stack, patterns, and conventions so Claude (or any AI as
 - **Redis client**: redis (with asyncio: `redis.asyncio.Redis`)
 - **Config**: pydantic-settings (env vars, validation)
 - **Tests**: pytest, pytest-asyncio, httpx (async tests, `AsyncClient`)
-- **Linting**: isort, pylint, pyright (all configured in `pyproject.toml`)
-- **Pre-commit**: hooks for isort, pylint, pyright
+- **Linting**: isort, ruff, pyright (all configured in `pyproject.toml`)
+- **Pre-commit**: hooks for isort, ruff, pyright
 - **CI**: GitHub Actions (runs all checks on push/PR)
 
 ## Where to Add What
@@ -86,7 +86,7 @@ uv sync
 
 ```bash
 uv run isort .
-uv run pylint app/
+uv run ruff check .
 uv run pyright
 uv run pytest tests/ -v
 ```

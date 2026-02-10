@@ -14,7 +14,7 @@ This is a production-style FastAPI skeleton with:
 - **Database**: PostgreSQL 16 (async SQLAlchemy + asyncpg)
 - **Cache**: Redis 7
 - **Package manager**: uv (fast, lockfile-based)
-- **Code quality**: isort, pylint, pyright, pre-commit
+- **Code quality**: isort, ruff, pyright, pre-commit
 - **Testing**: pytest with async support
 - **CI**: GitHub Actions running all checks
 
@@ -112,7 +112,7 @@ uv run pytest tests/api/test_health.py -v
 Check only (no changes):
 ```bash
 uv run isort --check .
-uv run pylint app/
+uv run ruff check .
 uv run pyright
 ```
 
@@ -176,7 +176,7 @@ docker compose exec redis redis-cli
 
 ## CI
 
-On every push/PR, GitHub Actions runs the same checks: isort, pylint, pyright, and pytest.
+On every push/PR, GitHub Actions runs the same checks: isort, ruff, pyright, and pytest.
 
 See [.github/workflows/ci.yml](.github/workflows/ci.yml).
 

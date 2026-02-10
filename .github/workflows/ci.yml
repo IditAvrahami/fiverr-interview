@@ -38,8 +38,8 @@ jobs:
       - name: Run isort
         run: uv run isort --check .
 
-      - name: Run pylint
-        run: uv run pylint app/
+      - name: Run ruff
+        run: uv run ruff check .
 
       - name: Run pyright
         run: uv run pyright

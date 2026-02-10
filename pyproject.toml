@@ -19,7 +19,7 @@ dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
     "httpx>=0.27.0",
-    "pylint>=3.0.0",
+    "ruff>=0.8.0",
     "pyright>=1.1.0",
     "isort>=5.13.0",
     "pre-commit>=3.0.0",
@@ -36,12 +36,16 @@ packages = ["app"]
 profile = "black"
 line_length = 100
 
-[tool.pylint.messages_control]
-max-line-length = 100
-disable = [
-    "C0114",  # missing-module-docstring
-    "C0115",  # missing-class-docstring
-    "C0116",  # missing-function-docstring
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = [".venv", "venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+ignore = [
+    "D",    # skip pydocstyle (docstring conventions)
+    "B008", # do not perform function calls in argument defaults (FastAPI Depends() is intentional)
 ]
 
 [tool.pyright]

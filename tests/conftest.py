@@ -1,6 +1,6 @@
 """Pytest fixtures: app and async HTTP client."""
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 from fastapi import FastAPI
