@@ -1,38 +1,130 @@
-# fiverr-interview
+# Fiverr URL Shortener Service
 
-FastAPI skeleton with Postgres, Redis, Docker, uv, lint/tests.
+A URL shortening service for Fiverr sellers to create short, clean, trackable links to their Fiverr gigs. Sellers earn $0.05 in Fiverr credit for each valid click on their links.
 
-## Prerequisites
+## Features
 
-- **Docker** and **Docker Compose** (for running all services)
-- For local dev: **Python 3.12+**, **[uv](https://docs.astral.sh/uv/getting-started/installation)**, **Git**
+- **Short Link Generation**: Create memorable short links from long Fiverr gig URLs
+- **Duplicate Detection**: Same URLs get the same short code to prevent redundancy
+- **Fraud Detection**: All clicks pass through fraud validation (simulated with a 100ms delay)
+- **Click Tracking**: Record all clicks with IP and user agent information
+- **Analytics**: View comprehensive stats with total clicks, valid clicks, earnings, and monthly breakdowns
+- **Pagination**: Built-in pagination for viewing analytics of many links
+- **Reward System**: Earn $0.05 in Fiverr credit for every valid click
 
-## Overall Design
+## Tech Stack
 
-This is a production-style FastAPI skeleton with:
 - **API**: FastAPI with async endpoints
-- **Database**: PostgreSQL 16 (async SQLAlchemy + asyncpg)
-- **Cache**: Redis 7
+- **Database**: PostgreSQL 16 with async SQLAlchemy
+- **Cache**: Redis 7 (for future scaling)
 - **Package manager**: uv (fast, lockfile-based)
 - **Code quality**: isort, ruff, pyright, pre-commit
 - **Testing**: pytest with async support
 - **CI**: GitHub Actions running all checks
+- **Docker**: Containerized deployment with Docker Compose
 
-**Directory layout**:
+## Architecture
+
+The application follows a clean, layered architecture:
+
+- **Models**: SQLAlchemy models for Link and Click data
+- **Schemas**: Pydantic models for request/response validation
+- **Services**: Business logic for link generation, click tracking, and fraud detection
+- **API**: FastAPI endpoints for link creation, redirection, and analytics
+- **Config**: Environment-based configuration via pydantic-settings
+
+### Directory Structure
+
 ```
-app/             # FastAPI application
-  main.py        # App entry, lifespan
-  config.py      # Pydantic settings (env vars)
-  api/v1/        # API routes (health checks)
-  db/            # Database session, base
-  redis_client.py # Redis connection
-  models/        # SQLAlchemy models (empty - add yours)
-  schemas/       # Pydantic schemas (empty - add yours)
-tests/           # pytest tests
+app/                # FastAPI application
+  main.py           # App entry, lifespan, root redirect handler
+  config.py         # Pydantic settings (env vars)
+  api/v1/           # API routes
+    links.py        # Link generation and analytics endpoints
+    health.py       # Health checks
+  db/               # Database connection
+  models/           # SQLAlchemy models
+    link.py         # Link and Click models
+  schemas/          # Pydantic schemas
+    link.py         # Link request/response schemas
+  services/         # Business logic
+    link_service.py # Link generation and analytics
+    fraud_service.py # Fraud detection
+tests/              # pytest tests
 docker-compose.yml  # All services (app, postgres, redis)
 ```
 
-**Config**: Loaded from `.env` file and environment variables via `pydantic-settings`. Docker uses hostnames `postgres` and `redis`.
+## API Endpoints
+
+### Generate a Short Link
+
+```
+POST /api/v1/link
+```
+
+Request:
+```json
+{
+  "original_url": "https://www.fiverr.com/your_username/your-gig"
+}
+```
+
+Response:
+```json
+{
+  "original_url": "https://www.fiverr.com/your_username/your-gig",
+  "short_url": "http://localhost:8000/abc123",
+  "short_code": "abc123",
+  "created_at": "2023-05-20T15:30:45.123Z"
+}
+```
+
+### Access a Short Link
+
+```
+GET /{short_code}
+```
+
+This redirects to the original URL and records the click if it passes fraud validation.
+
+### Get Analytics
+
+```
+GET /api/v1/analytics?page=1&page_size=10
+```
+
+Response:
+```json
+{
+  "links": [
+    {
+      "original_url": "https://www.fiverr.com/your_username/your-gig",
+      "short_url": "http://localhost:8000/abc123",
+      "short_code": "abc123",
+      "created_at": "2023-05-20T15:30:45.123Z",
+      "total_clicks": 42,
+      "valid_clicks": 38,
+      "earnings": 1.90,
+      "monthly_stats": [
+        {
+          "month": "2023-05",
+          "valid_clicks": 15,
+          "earnings": 0.75
+        },
+        {
+          "month": "2023-06",
+          "valid_clicks": 23,
+          "earnings": 1.15
+        }
+      ]
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "page_size": 10,
+  "total_pages": 1
+}
+```
 
 ## How to Run
 
@@ -44,30 +136,6 @@ docker compose up --build
 
 - API: http://localhost:8000
 - Docs: http://localhost:8000/docs
-
-### Test that the server runs (cURL)
-
-Basic liveness:
-```bash
-curl -s http://localhost:8000/api/v1/health
-```
-
-Check Postgres connectivity:
-```bash
-curl -s http://localhost:8000/api/v1/health/db
-```
-
-Check Redis connectivity:
-```bash
-curl -s http://localhost:8000/api/v1/health/redis
-```
-
-All health checks (verbose):
-```bash
-curl -s -w "\n%{http_code}\n" http://localhost:8000/api/v1/health
-curl -s -w "\n%{http_code}\n" http://localhost:8000/api/v1/health/db
-curl -s -w "\n%{http_code}\n" http://localhost:8000/api/v1/health/redis
-```
 
 ### Option B: Local Development
 
@@ -90,7 +158,7 @@ curl -s -w "\n%{http_code}\n" http://localhost:8000/api/v1/health/redis
    ```
 6. In VS Code: select `.venv/Scripts/python.exe` (Windows) or `.venv/bin/python` (Mac/Linux) as interpreter
 
-## Tests
+## Testing
 
 Run all tests:
 ```bash
@@ -104,83 +172,65 @@ uv run pytest tests/ -v --cov=app --cov-report=html
 
 Run specific test file:
 ```bash
-uv run pytest tests/api/test_health.py -v
+uv run pytest tests/api/test_links.py -v
 ```
 
-## Lint / Type-check
+## Example Usage
 
-Check only (no changes):
+### Creating a Short Link
+
 ```bash
-uv run isort --check .
-uv run ruff check .
-uv run pyright
+curl -X POST -H "Content-Type: application/json" -d '{"original_url":"https://www.fiverr.com/johndoe/design-awesome-logo"}' http://localhost:8000/api/v1/link
 ```
 
-Auto-fix formatting:
+### Using the Short Link
+
+Just open the short link in a browser:
+```
+http://localhost:8000/{short_code}
+```
+
+### Viewing Analytics
+
 ```bash
-uv run isort .
+curl http://localhost:8000/api/v1/analytics
 ```
 
-## Pre-commit
+## Configuration
 
-Install hooks:
-```bash
-uv run pre-commit install
-```
+The following environment variables can be set in your `.env` file or environment:
 
-Run all hooks:
-```bash
-uv run pre-commit run --all-files
-```
+- `BASE_URL`: Base URL for generated short links (default: "http://localhost:8000")
+- `CREDIT_PER_CLICK`: Amount of credit in cents per valid click (default: 5)
+- `DATABASE_URL`: PostgreSQL connection string
+- `REDIS_URL`: Redis connection string
+- `DEBUG`: Enable debug mode (default: true)
+- `APP_ENV`: Environment name (default: "development")
 
-## Docker Commands
+## Testing Edge Cases
 
-View logs (all services):
-```bash
-docker compose logs -f
-```
+The service handles the following edge cases:
 
-View logs (specific service):
-```bash
-docker compose logs -f app
-docker compose logs -f postgres
-docker compose logs -f redis
-```
+1. **Invalid URLs**: Returns a 422 error when trying to create links with invalid URLs
+2. **Non-existent short codes**: Returns a 404 error when accessing a non-existent short link
+3. **Duplicate URL shortening**: Returns the same short code when shortening the same URL multiple times
+4. **Fraud detection**: Only valid clicks (90% in the simulation) earn credits
+5. **Pagination limits**: Page size is limited to 100 entries max to prevent overload
 
-Stop all services:
-```bash
-docker compose down
-```
+## Further Improvements
 
-Stop and remove volumes (clean slate):
-```bash
-docker compose down -v
-```
+Future improvements could include:
 
-Rebuild and restart:
-```bash
-docker compose up --build --force-recreate
-```
-
-## Database & Redis Access
-
-Access PostgreSQL:
-```bash
-docker compose exec postgres psql -U user -d dbname
-```
-
-Access Redis CLI:
-```bash
-docker compose exec redis redis-cli
-```
-
-## CI
-
-On every push/PR, GitHub Actions runs the same checks: isort, ruff, pyright, and pytest.
-
-See [.github/workflows/ci.yml](.github/workflows/ci.yml).
+1. **Rate limiting**: Prevent abuse by limiting requests per IP
+2. **Custom short codes**: Allow sellers to choose their own short codes
+3. **Expiration dates**: Add expiry dates to links
+4. **Click geolocation**: Track geographical data of clicks
+5. **User authentication**: Allow sellers to log in and manage their links
+6. **Caching**: Implement Redis caching for frequently accessed links
+7. **Advanced analytics**: Add charts and visualizations for click data
+8. **QR code generation**: Generate QR codes for short links
+9. **A/B testing**: Compare performance of different links for the same gig
 
 ## Links
 
 - **Extending the app**: See [CLAUDE.md](CLAUDE.md) for stack, patterns, and where to add code.
-- **Claude Code setup**: See [docs/CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for configuring the Claude Code extension in VS Code with AWS Bedrock API key.

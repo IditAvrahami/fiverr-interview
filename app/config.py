@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # App
     APP_ENV: str = "development"
     DEBUG: bool = True
+    BASE_URL: str = "http://localhost:8000"
+    # Credit amount per valid click in cents
+    CREDIT_PER_CLICK: int = 5
 
     @property
     def database_url(self) -> str:
