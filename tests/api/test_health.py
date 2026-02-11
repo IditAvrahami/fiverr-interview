@@ -18,4 +18,4 @@ async def test_root(client: AsyncClient) -> None:
     """GET / returns 200 and message OK."""
     response = await client.get("/")
     assert response.status_code == 200
-    assert response.json().get("message") == "OK"
+    assert response.json().get("message") == "URL Shortener API is running"
